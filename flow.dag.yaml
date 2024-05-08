@@ -1,0 +1,93 @@
+id: use_functions_with_chat_models
+name: Use Functions with Chat Models
+environment:
+  python_requirements_txt: requirements.txt
+inputs:
+  chat_history:
+    type: list
+    default: []
+    is_chat_history: true
+    is_chat_input: false
+  question:
+    type: string
+    default: What session does Hieu present at the conference?
+    is_chat_history: false
+    is_chat_input: true
+outputs:
+  answer:
+    type: string
+    reference: ${llmanswer.output}
+    is_chat_output: true
+  llm_output:
+    type: object
+    reference: ${use_functions_with_chat_models.output}
+    is_chat_output: false
+  function_output:
+    type: string
+    reference: ${run_function.output}
+    is_chat_output: false
+nodes:
+- name: run_function
+  type: python
+  source:
+    type: code
+    path: run_function.py
+  inputs:
+    response_message: ${use_functions_with_chat_models.output}
+  use_variants: false
+- name: use_functions_with_chat_models
+  type: llm
+  source:
+    type: code
+    path: use_functions_with_chat_models.jinja2
+  inputs:
+    deployment_name: gpt-4
+    temperature: 0
+    top_p: 1
+    presence_penalty: 0
+    frequency_penalty: 0
+    functions:
+    - name: find_sessions_by_query
+      description: Get the Session in the Conference based on the Agenda topic
+      parameters:
+        type: object
+        properties:
+          query:
+            type: string
+            description: The agenda topic/query
+        required:
+        - query
+    - name: find_sessions_by_speaker
+      description: Get the Session in the Conference based on the name of the speaker
+      parameters:
+        type: object
+        properties:
+          speaker_name:
+            type: string
+            description: The name of the speaker
+        required:
+        - speaker_name
+    function_call: auto
+    chat_history: ${inputs.chat_history}
+    question: ${inputs.question}
+  provider: AzureOpenAI
+  connection: aoai-connection
+  api: chat
+  module: promptflow.tools.aoai
+  use_variants: false
+- name: llmanswer
+  type: llm
+  source:
+    type: code
+    path: llmanswer.jinja2
+  inputs:
+    deployment_name: gpt-4
+    temperature: 0
+    top_p: 1
+    presence_penalty: 0
+    frequency_penalty: 0
+    chat_history: ${inputs.chat_history}
+    function_output: ${run_function.output}
+    question: ${inputs.question}
+  connection: aoai-connection
+  api: chat
