@@ -5,7 +5,7 @@ import numpy as np
 from openai import AzureOpenAI
 
 client = AzureOpenAI(
-  api_key = "",#"221a4b94f91b43999419c9e5c57c5777",  
+  api_key = "", 
   api_version = "2024-02-01",
   azure_endpoint ="https://confdemo-openai-3rde3acypqeqg.openai.azure.com/"
 )
